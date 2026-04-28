@@ -1,16 +1,21 @@
 package com.example.act1.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.act1.data.model.Jugador
 import com.example.act1.ui.viewmodel.PlayerViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,16 +32,18 @@ fun PlayerFormScreen(
     var idEquipo by remember { mutableStateOf("") }
     
     val selectedPlayer by viewModel.selectedPlayer.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(playerId) {
-        if (playerId != null) {
+        if (playerId != null && playerId != -1) {
             viewModel.loadPlayer(playerId)
         }
     }
 
     LaunchedEffect(selectedPlayer) {
         selectedPlayer?.let {
-            if (playerId != null) {
+            if (playerId != null && playerId != -1) {
                 nombre = it.nombre
                 posicion = it.posicion
                 dorsal = it.dorsal.toString()
@@ -48,7 +55,16 @@ fun PlayerFormScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(if (playerId == null) "Nuevo Jugador" else "Editar Jugador") }) }
+        topBar = { 
+            TopAppBar(
+                title = { Text(if (playerId == null || playerId == -1) "Nuevo Jugador" else "Editar Jugador") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                    }
+                }
+            ) 
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -99,7 +115,7 @@ fun PlayerFormScreen(
             Button(
                 onClick = {
                     val player = Jugador(
-                        id = playerId,
+                        id = if (playerId == -1) null else playerId,
                         nombre = nombre,
                         posicion = posicion,
                         dorsal = dorsal.toIntOrNull() ?: 0,
@@ -108,6 +124,7 @@ fun PlayerFormScreen(
                         idEquipo = idEquipo.toIntOrNull() ?: 0
                     )
                     viewModel.savePlayer(player) {
+                        Toast.makeText(context, "Datos guardados correctamente", Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
                     }
                 },
