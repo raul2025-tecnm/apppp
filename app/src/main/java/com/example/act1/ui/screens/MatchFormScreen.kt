@@ -1,10 +1,14 @@
 package com.example.act1.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,13 +31,14 @@ fun MatchFormScreen(
     var estadio by remember { mutableStateOf("") }
 
     val matches by viewModel.matches.collectAsState()
+    val context = LocalContext.current
     
-    LaunchedEffect(matchId) {
+    LaunchedEffect(Unit) {
         viewModel.loadMatches()
     }
 
     LaunchedEffect(matches) {
-        if (matchId != null) {
+        if (matchId != null && matchId != -1) {
             matches.find { it.id == matchId }?.let {
                 localId = it.equipoLocal.toString()
                 visitaId = it.equipoVisita.toString()
@@ -46,7 +51,16 @@ fun MatchFormScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(if (matchId == null) "Nuevo Partido" else "Editar Partido") }) }
+        topBar = { 
+            TopAppBar(
+                title = { Text(if (matchId == null || matchId == -1) "Nuevo Partido" else "Editar Partido") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                    }
+                }
+            ) 
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -101,7 +115,7 @@ fun MatchFormScreen(
             Button(
                 onClick = {
                     val match = Partido(
-                        id = matchId,
+                        id = if (matchId == -1) null else matchId,
                         equipoLocal = localId.toIntOrNull() ?: 0,
                         equipoVisita = visitaId.toIntOrNull() ?: 0,
                         golesLocal = golesLocal.toIntOrNull() ?: 0,
@@ -110,6 +124,7 @@ fun MatchFormScreen(
                         estadio = estadio
                     )
                     viewModel.saveMatch(match) {
+                        Toast.makeText(context, "Datos guardados correctamente", Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
                     }
                 },
